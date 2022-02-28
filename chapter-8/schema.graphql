@@ -1,0 +1,25 @@
+type Query {
+  cart(id: ID!): Cart
+}
+
+type Cart {
+  id: ID!
+  totalItems: Int!
+  items: [CartItem!]!
+  subTotal: Money!
+}
+
+type CartItem {
+  id: ID!
+  name: String!
+  description: String
+  unitTotal: Money!
+  lineTotal: Money!
+  quantity: Int!
+  image: String
+}
+
+type Money {
+  formatted: String!
+  amount: Int!
+}
