@@ -1,34 +1,270 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Install and configure GraphQL Code Generator
 
-## Getting Started
+As we seen previously, the `resolvers` we defined aren’t type-safe, which often leads to bugs at runtime.
 
-First, run the development server:
+Now install and configure the [GraphQL Code Generator](https://www.graphql-code-generator.com/) to automatically create some types we can use throughout our project.
+
+The GraphQL Code Generator works by invoking plugins across our defined file(s). We’ll be using the following plugins:
+
+- `@graphql-codegen/typescript`
+- `@graphql-codegen/typescript-operations`
+- `@graphql-codegen/typescript-resolvers`
+
+Let’s use the initialization wizard to generate a config file.
+
+At the terminal, run the following:
 
 ```bash
-npm run dev
-# or
-yarn dev
+npx graphql-codegen init
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The wizard will ask us a bit more about our application:
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+- **What type of application are you building?** — `React`
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+- **Where is your schema?** — `schema.graphql`
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+- **Where are your operations and fragments?** — `**/*.graphql`
 
-## Learn More
+- **Pick plugins** — `TypeScript, TypeScript Operations`
 
-To learn more about Next.js, take a look at the following resources:
+- **Where to write the output** — `types.ts`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Do you want to generate an introspection file?** — `No`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+- **How to name the config file?** — `codegen.yml`
 
-## Deploy on Vercel
+- **What script in package.json should run the codegen?** — `codegen`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Once you provide the answers to all of these questions, you should see the new file `codegen.yml` in the root of your project, and `codegen` inside of `scripts` and some new `devDependencies` within `package.json`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+If you open `codegen.yml` it should look something like:
+
+```yaml
+overwrite: true
+schema: "schema.graphql"
+documents: "**/*.graphql"
+generates:
+  types.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+```
+
+You’ll probably notice we’re missing the plugin `typescript-operations` that we said we’d be using above . Let’s install that now.
+
+At the command line, run the following:
+
+```bash
+npm install -E -D @graphql-codegen/typescript-resolvers
+```
+
+Once installed, update `codegen.yml` to include the new `plugin`:
+
+```yaml
+overwrite: true
+schema: "schema.graphql"
+documents: "**/*.graphql"
+generates:
+  types.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-resolvers"
+```
+
+We’ll now invoke the `codegen` script to generate our `types.ts` file, but before we do, you’ll want to comment out the line `documents: "**/*.graphql"` as we have no documents yet inside of our project:
+
+```yaml
+overwrite: true
+schema: "schema.graphql"
+# documents: "**/*.graphql"
+generates:
+  types.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-resolvers"
+```
+
+At the command line, run the following:
+
+```bash
+npm run codegen
+```
+
+You should now see the file `types.ts` in the root of the project.
+
+<details>
+  <summary>Preview file contents</summary>
+    
+```tsx
+import { GraphQLResolveInfo } from 'graphql';
+export type Maybe<T> = T | null;
+export type InputMaybe<T> = Maybe<T>;
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
+/** All built-in and custom scalars, mapped to their actual values */
+export type Scalars = {
+  ID: string;
+  String: string;
+  Boolean: boolean;
+  Int: number;
+  Float: number;
+};
+
+export type Cart = {
+  __typename?: 'Cart';
+  id: Scalars['ID'];
+  totalItems: Scalars['Int'];
+};
+
+export type Query = {
+  __typename?: 'Query';
+  cart?: Maybe<Cart>;
+};
+
+export type QueryCartArgs = {
+  id: Scalars['ID'];
+};
+
+export type ResolverTypeWrapper<T> = Promise<T> | T;
+
+export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
+  resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
+};
+export type Resolver<TResult, TParent = {}, TContext = {}, TArgs = {}> = ResolverFn<TResult, TParent, TContext, TArgs> | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
+
+export type ResolverFn<TResult, TParent, TContext, TArgs> = (
+  parent: TParent,
+  args: TArgs,
+  context: TContext,
+  info: GraphQLResolveInfo
+) => Promise<TResult> | TResult;
+
+export type SubscriptionSubscribeFn<TResult, TParent, TContext, TArgs> = (
+  parent: TParent,
+  args: TArgs,
+  context: TContext,
+  info: GraphQLResolveInfo
+) => AsyncIterable<TResult> | Promise<AsyncIterable<TResult>>;
+
+export type SubscriptionResolveFn<TResult, TParent, TContext, TArgs> = (
+  parent: TParent,
+  args: TArgs,
+  context: TContext,
+  info: GraphQLResolveInfo
+) => TResult | Promise<TResult>;
+
+export interface SubscriptionSubscriberObject<TResult, TKey extends string, TParent, TContext, TArgs> {
+  subscribe: SubscriptionSubscribeFn<{ [key in TKey]: TResult }, TParent, TContext, TArgs>;
+  resolve?: SubscriptionResolveFn<TResult, { [key in TKey]: TResult }, TContext, TArgs>;
+}
+
+export interface SubscriptionResolverObject<TResult, TParent, TContext, TArgs> {
+  subscribe: SubscriptionSubscribeFn<any, TParent, TContext, TArgs>;
+  resolve: SubscriptionResolveFn<TResult, any, TContext, TArgs>;
+}
+
+export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, TArgs> =
+  | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
+  | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
+
+export type SubscriptionResolver<TResult, TKey extends string, TParent = {}, TContext = {}, TArgs = {}> =
+  | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
+  | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
+
+export type TypeResolveFn<TTypes, TParent = {}, TContext = {}> = (
+  parent: TParent,
+  context: TContext,
+  info: GraphQLResolveInfo
+) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
+
+export type IsTypeOfResolverFn<T = {}, TContext = {}> = (obj: T, context: TContext, info: GraphQLResolveInfo) => boolean | Promise<boolean>;
+
+export type NextResolverFn<T> = () => Promise<T>;
+
+export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs = {}> = (
+  next: NextResolverFn<TResult>,
+  parent: TParent,
+  args: TArgs,
+  context: TContext,
+  info: GraphQLResolveInfo
+) => TResult | Promise<TResult>;
+
+/** Mapping between all available schema types and the resolvers types */
+export type ResolversTypes = {
+  Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
+  Cart: ResolverTypeWrapper<Cart>;
+  ID: ResolverTypeWrapper<Scalars['ID']>;
+  Int: ResolverTypeWrapper<Scalars['Int']>;
+  Query: ResolverTypeWrapper<{}>;
+  String: ResolverTypeWrapper<Scalars['String']>;
+};
+
+/** Mapping between all available schema types and the resolvers parents */
+export type ResolversParentTypes = {
+  Boolean: Scalars['Boolean'];
+  Cart: Cart;
+  ID: Scalars['ID'];
+  Int: Scalars['Int'];
+  Query: {};
+  String: Scalars['String'];
+};
+
+export type CartResolvers<ContextType = any, ParentType extends ResolversParentTypes['Cart'] = ResolversParentTypes['Cart']> = {
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  totalItems?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
+  cart?: Resolver<Maybe<ResolversTypes['Cart']>, ParentType, ContextType, RequireFields<QueryCartArgs, 'id'>>;
+};
+
+export type Resolvers<ContextType = any> = {
+  Cart?: CartResolvers<ContextType>;
+  Query?: QueryResolvers<ContextType>;
+};
+```
+</details>    
+
+If you inspect this file closely, you’ll see all of the types generated for our GraphQL schema, as well as the `resolvers`.
+
+You should see the following `type Resolvers`:
+
+```tsx
+export type Resolvers<ContextType = any> = {
+  Cart?: CartResolvers<ContextType>;
+  Query?: QueryResolvers<ContextType>;
+};
+```
+
+⚠️ You’ll notice the use of `any` for the `ContextType` above. We’ll fix this later when we define our server context.
+
+We’ll now update `pages/api/index.ts` to import this type:
+
+```tsx
+import { Resolvers } from "../../types";
+```
+
+Then update the `resolvers` object to use `Resolvers` as its type:
+
+```tsx
+const resolvers: Resolvers = {
+  Query: {
+    cart: (_, { id }) => {
+      return {
+        id,
+        totalItems: 0,
+      };
+    },
+  },
+};
+```
+
+You will now see the TypeScript warnings are gone! 🥳
+
+That’s all that we need from GraphQL Code Generator for now. We’ll see how something as simple as typing the resolvers benefits us when we add more to our schema and resolvers, later.
