@@ -1,34 +1,147 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Install GraphQL Yoga, and configure API route
 
-## Getting Started
+We’re now ready to create our first API route with Next.js — we’ll be using this as a GraphQL endpoint that powers our entire frontend.
 
-First, run the development server:
+To do this, we’ll be using [GraphQL Yoga](https://graphql-yoga.com/). A fully-featured GraphQL server with support for subscriptions over HTTP (Server Sent Events), Uploads, and more, built by [The Guild](https://www.the-guild.dev/).
+
+⚠️ At the time of writing this, GraphQL Yoga is in beta. You’ll need to use the `@beta` version when installing.
+
+As well as installing GraphQL Yoga, we’ll need to install the peer dependency `graphql`.
+
+At the command line, run the following:
 
 ```bash
-npm run dev
-# or
-yarn dev
+npm install -E @graphql-yoga/node@beta graphql
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Now inside of `pages/api` you’ll want to rename `hello.ts` to `index.ts`. You could be explicit and name this `graphql.ts` but we’ll keep it simple for now.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+Replace the contents of `pages/api/index.ts` with the following:
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+```tsx
+import { createServer } from '@graphql-yoga/node'
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+const server = createServer({
+  cors: false,
+  endpoint: '/api',
+  logging: {
+    prettyLog: false,
+  },
+})
 
-## Learn More
+export const config = {
+  api: {
+    bodyParser: false,
+    externalResolver: true,
+  },
+}
 
-To learn more about Next.js, take a look at the following resources:
+export default server.requestListener;
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+You’ll notice above we’re exporting `const config`. We’ll defer to GraphQL Yoga for handling our requests, so we’ll disable `bodyParser`, and set `externalResolver` to true. This tells Next.js that this route is being by an external resolver.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Schema
 
-## Deploy on Vercel
+Now we’ll create a `schema` we can pass to `createServer`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+In the root of the project, create the file `schema.graphql`. We’ll use the SDL-first approach to define our schema.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+At the command line, run the following:
+
+```bash
+touch schema.graphql
+```
+
+Inside `schema.graphql`, add the following:
+
+```bash
+type Query {
+  cart(id: ID!): Cart
+}
+
+type Cart {
+  id: ID!
+  totalItems: Int!
+}
+```
+
+We’ll add more to this later, but now next let’s import, and define a resolver for the `cart` query.
+
+Inside `pages/api/index.ts` add the following imports:
+
+```bash
+import { join } from "path";
+import { readFileSync } from "fs";
+```
+
+Then above where we define our `server`, create the const `typeDefs` that reads the file `schema.graphql`:
+
+```tsx
+const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
+  encoding: "utf-8",
+});
+```
+
+⚠️ We need to use `process.cwd()` instead of `__dirname` due to how Vercel works — [learn more](https://nextjs.org/docs/api-reference/data-fetching/get-static-props#reading-files-use-processcwd).
+
+Now we’ll define a resolver for our `cart` query.  Below `typeDefs`, create a new const `resolvers`:
+
+```tsx
+const resolvers = {
+  Query: {
+    cart: (_, { id }) => {
+      return {
+        id,
+        totalItems: 0
+      }
+    }
+  }
+}
+```
+
+We’ll destructure `id` from the 2nd argument for the `cart` resolver, and then return an object that matches the type defined in our `schema.graphql`.
+
+👀 *You’ll notice we have no type safety on the above resolvers. TypeScript is warning us about the implicit `any` type. We’ll fix that with the GraphQL Code Generator next.*
+
+You can now pass `typeDefs`, and `resolvers` to `schema` inside of `createServer`:
+
+```tsx
+const server = createServer({
+  cors: false,
+  endpoint: "/api",
+  logging: {
+    prettyLog: false,
+  },
+  schema: {
+    typeDefs,
+    resolvers,
+  },
+});
+```
+
+Finally, we can visit [http://localhost:3000/api](http://localhost:3000/api) to run an example query, and check our resolver returns as expected.
+
+Execute the following query:
+
+```graphql
+{
+  cart(id: "oneweekgraphql") {
+    id
+    totalItems
+  }
+}
+```
+
+If we did everything correctly, you should see a response containing the `id` you passed, as well as the `totalItems` as `0`:
+
+```json
+{
+  "data": {
+    "cart": {
+      "id": "oneweekgraphql",
+      "totalItems": 0
+    }
+  }
+}
+```
