@@ -1,0 +1,8 @@
+type Query {
+  cart(id: ID!): Cart
+}
+
+type Cart {
+  id: ID!
+  totalItems: Int!
+}
