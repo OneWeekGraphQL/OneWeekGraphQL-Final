@@ -1,34 +1,71 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Install and configure Tailwind CSS
 
-## Getting Started
+We’ll be using Tailwind CSS to style our storefront. Let’s begin by installing the required development dependencies (using the flag `-D` below), and configuring PostCSS.
 
-First, run the development server:
+Inside the terminal, run the following:
+
+```bash
+npm install -D tailwindcss autoprefixer postcss
+```
+
+We’ll now need to generate the files `tailwind.config.js` and `postcss.config.js` where we can customize the config for the newly installed dependencies.
+
+Inside the terminal, run the following:
+
+```bash
+npx tailwindcss init -p
+```
+
+You will now see both files in the root of the project.
+
+Open `tailwind.config.js` and configure the template paths using the `content` array:
+
+```jsx
+module.exports = {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+```
+
+Finally, inside `pages/_app.tsx` add the following import at the top:
+
+```tsx
+import "tailwindcss/tailwind.css";
+```
+
+Your `pages/_app.tsx` should look something like this:
+
+```tsx
+import "tailwindcss/tailwind.css";
+import type { AppProps } from "next/app";
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />;
+}
+
+export default MyApp;
+```
+
+Now let’s add a Tailwind class to our homepage `h1`. Inside `pages/index.tsx` update the `h1` to include the following `className`:
+
+```tsx
+import type { NextPage } from "next";
+
+const Home: NextPage = () => {
+  return <h1 className="text-purple-500 text-xl">Hello world</h1>;
+};
+
+export default Home;
+```
+
+Finally, let’s start the Next.js app and see our styled `h1` at `http://localhost:3000`:
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
-
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
-
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
