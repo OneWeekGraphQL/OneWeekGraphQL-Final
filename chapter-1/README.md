@@ -1,34 +1,47 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Creating a new Next.js app
 
-## Getting Started
+We’ll begin by creating a new Next.js project using the `create-next-app` CLI tool. The Next.js app will power both our frontend, and GraphQL endpoint.
 
-First, run the development server:
+We’ll name our application `oneweekgraphql` (or choose your own name), and pass the flag `--ts` to enable TypeScript.
+
+At the command line, run the following:
 
 ```bash
-npm run dev
-# or
-yarn dev
+npx create-next-app@latest oneweekgraphql --ts --use-npm
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*You’ll be prompted to install the NPX command if you haven’t ran it recently.*
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+Next we’ll “change directory” into our newly created project.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+At the command line, run the following:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```bash
+cd oneweekgraphql
+```
 
-## Learn More
+We’ll not be using any of the generated Next.js code for styles, or pages, so we can go ahead and remove any traces of those.
 
-To learn more about Next.js, take a look at the following resources:
+Inside `pages/_app.tsx` you will want to remove the `import` for the `globals.css` file.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Now inside of `pages/index.tsx`, replace the contexts with:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```tsx
+import type { NextPage } from "next";
 
-## Deploy on Vercel
+const Home: NextPage = () => {
+  return <h1>Hello world</h1>;
+};
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+export default Home;
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Since we’re no longer using the imported styles, we can now delete the `styles` folder from the root of our project.
+
+Finally, we’ll create a folder for future components we’ll use to build our storefront. 
+
+At the command line, run the following:
+
+```bash
+mkdir components
+```
