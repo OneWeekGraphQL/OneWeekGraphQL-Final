@@ -1,34 +1,30 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Install and configure Docker Compose
 
-## Getting Started
+We’re going to install a MySQL database to persist our data. And we’ll install it using Docker and Docker compose, which is a great platform agnostic way to install and manage development databases.
 
-First, run the development server:
+Keep in mind that we’ll only be using Docker for local development. We’ll use a hosted database for staging and production, and we’ll host our Next.js application using Vercel, which does not need Docker.
 
-```bash
-npm run dev
-# or
-yarn dev
+Install Docker if you don’t already have it by following their [getting started guide](https://docs.docker.com/get-started/), based on your operating system.
+
+Create a file called `docker-compose.yml` and define a service called database. It will describe a MySQL image, along with environment variables like database name and credentials. It will also expose the service on port 3306.
+
+Here’s what the final result should look like:
+
+```yaml
+version: "3"
+
+services:
+  database:
+    platform: linux/x86_64
+    image: mysql
+    restart: always
+    environment:
+      - MYSQL_DATABASE=mydb
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+    ports:
+      - "3307:3306"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
-
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
-
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Run `docker compose up` to start and expose the database. You can now access it using the following URL: `mysql://root:password@localhost:3307/mydb`
