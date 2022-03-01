@@ -1,34 +1,191 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Install and configure Prisma
 
-## Getting Started
+We’ll be using [Prisma](https://www.prisma.io/) as our database ORM inside of our GraphQL resolvers. Prisma generates a “client” that we can use inside of our queries, and mutations to talk to our database.
 
-First, run the development server:
+We’ll be using 2 Prisma dependencies, for code generation, and use inside of our resolvers:
+
+- `prisma`
+- `@prisma/client`
+
+At the terminal, run the following:
 
 ```bash
-npm run dev
-# or
-yarn dev
+npm install -E -D prisma
+npm install -E @prisma/client
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Once installed, let’s run the Prisma `init`command to get started.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+At the terminal, run the following:
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+```bash
+npx prisma init
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+This will generate the file `prisma/schema.prisma`, and `.env` with some boilerplate.
 
-## Learn More
+Before we continue, let’s update `package.json` to include a script to run the `prisma generate` command.
 
-To learn more about Next.js, take a look at the following resources:
+```json
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "codegen": "graphql-codegen --config codegen.yml",
+  "generate": "prisma generate"
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+We’ll next update `.env` to include the value of `DATABASE_URL` that points to our Docker instance we setup previously:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```bash
+DATABASE_URL="mysql://root:password@localhost:3307/mydb"
+```
 
-## Deploy on Vercel
+Instead of the default `postgresql` database provider, we’ll use `mysql`. Inside `prisma/schema.prisma` update the `datasource` `provider`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```tsx
+generator client {
+  provider        = "prisma-client-js"
+}
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+}
+```
+
+Now we’ll create an instance of `PrismaClient` that we’ll be able to use inside of our GraphQL API. In development we can exhaust our database connection limit very easily with reloading so we’ll attach it to a global object.
+
+Create the file `lib/prisma.ts` and add the following:
+
+```tsx
+import { PrismaClient } from "@prisma/client";
+
+// PrismaClient is attached to the `global` object in development to prevent
+// exhausting your database connection limit.
+//
+// Learn more:
+// https://pris.ly/d/help/next-js-best-practices
+
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
+let prisma: PrismaClient;
+
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient();
+} else {
+  if (!global.prisma) {
+    global.prisma = new PrismaClient();
+  }
+  prisma = global.prisma;
+}
+export default prisma;
+```
+
+Now we’ll hook up Prisma with our GraphQL server context. Inside `pages/api/index.ts` go ahead and import the Prisma client we exported from `lib/prisma.ts` and the type `PrismaClient` from the `@prisma/client` dependency, as well as `YogaInitialContext` type:
+
+```tsx
+import type { PrismaClient } from "@prisma/client";
+import type { YogaInitialContext } from "@graphql-yoga/node";
+
+import prisma from "../../lib/prisma";
+```
+
+Then define a new `type` for `GraphQLContext`:
+
+```tsx
+export interface GraphQLContext extends YogaInitialContext {
+	prisma: PrismaClient
+}
+```
+
+We should now update `codegen.yml` to point the `contextType` to our newly defined `GraphQLContext` type.
+
+Inside of `codegen.yml` add a block for `config` under `types.ts` to the exported type:
+
+```yaml
+overwrite: true
+schema: "schema.graphql"
+# documents: "**/*.graphql"
+generates:
+  types.ts:
+    config:
+      contextType: ./pages/api/index#GraphQLContext
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-resolvers"
+```
+
+Now if we run the `codegen` script we will have updated resolver context.
+
+At the terminal, run the following:
+
+```bash
+npm run codegen
+```
+
+You’ll now see inside of `types.ts` that the type for `Resolvers` has been updated to include the `GraphQLContext`:
+
+```tsx
+import { GraphQLContext } from './pages/api/index';
+
+// ...
+
+export type Resolvers<ContextType = GraphQLContext> = {
+  Cart?: CartResolvers<ContextType>;
+  Query?: QueryResolvers<ContextType>;
+};
+```
+
+Now inside of our resolvers we have fully typed `context`.
+
+Before we continue, let’s create a new `context` object, and pass it along to `createServer`:
+
+```tsx
+const context: GraphQLContext = {
+  prisma,
+};
+
+const server = createServer({
+  cors: false,
+  endpoint: "/api",
+  logging: {
+    prettyLog: false,
+  },
+  schema: {
+    typeDefs,
+    resolvers,
+  },
+  context: (req) => ({
+    ...req,
+    prisma,
+  }),
+});
+```
+
+```tsx
+const context: (req: YogaInitialContext) => GraphQLContext = (req) => ({
+  ...req,
+  prisma,
+});
+
+const server = createServer({
+  cors: false,
+  endpoint: "/api",
+  logging: {
+    prettyLog: false,
+  },
+  schema: {
+    typeDefs,
+    resolvers,
+  },
+  context,
+});
+```
+
+At this point we’ve not created any models inside `prisma/schema.prisma` so running the script `generate` will not do anything. We’ll fix this next.
