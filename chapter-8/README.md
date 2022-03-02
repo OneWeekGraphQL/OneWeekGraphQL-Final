@@ -1,34 +1,219 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Create schema and resolver for adding new item
 
-## Getting Started
+We'll expose a mutation to add new items to carts. To achieve this we'll go through the following steps:
 
-First, run the development server:
+1. GraphQL Schema
+2. Generate types
+3. Define GraphQL resolver
+4. Verify it works
 
-```bash
-npm run dev
-# or
-yarn dev
+## Add item mutation
+
+Since this is the first mutation we'll define, we need to create the `Mutation` type in our `schema.graphql` file.
+
+Inside this new type we'll define a mutation called `addItem` that takes an input named `AddToCartInput` as argument, and returns a `Cart`.
+
+```graphql
+type Mutation {
+  addItem(input: AddToCartInput!): Cart
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Now let's add the `AddToCartInput` type to the end of the file. It'll contain a number of properties needed to create cart items, being `cartId`, `name` and `price` it's only required ones.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+```graphql
+input AddToCartInput {
+  cartId: ID!
+  id: ID!
+  name: String!
+  description: String
+  image: String
+  price: Int!
+  quantity: Int = 1
+}
+```
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Now let's call `npm run codegen` in the terminal to reflect the new types in `types.ts`
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+`npm run codegen`
 
-## Learn More
+The previous command created a couple of new types: `Mutation` and `AddToCartInput`.
 
-To learn more about Next.js, take a look at the following resources:
+## Add item resolvers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Now we can go ahead and add a function called `addItem` to `pages/api/index.ts` that will act as resolver.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+It will create a new cart item to the database or update it if it's new, using `prisma.cartItem.upsert`.
 
-## Deploy on Vercel
+Upsert checks whether it creates or updates the item based on it's `where` parameter. In this case, we'll send `id_cartId` to it, since we defined in our `schema.prisma` file that cart items have a compound index made up of both `id` and `cartId`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If the item is new, we'll create one based on the input data. Otherwise, if it already exists, we'll update its quantity by `increment` or `1`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Add the following code right after `Query`, inside of `pages/api/index.ts`:
+
+```ts
+  Mutation: {
+    addItem: async (_, { input }) => {
+      await prisma.cartItem.upsert({
+        create: {
+          cartId: input.cartId,
+          id: input.id,
+          name: input.name,
+          description: input.description,
+          image: input.image,
+          price: input.price,
+          quantity: input.quantity || 1,
+        },
+        where: { id_cartId: { id: input.id, cartId: input.cartId } },
+        update: {
+          quantity: {
+            increment: input.quantity || 1,
+          },
+        },
+      });
+      return findOrCreateCart(input.cartId);
+    },
+  },
+```
+
+As you may have noticed, the code we just added used a new function called `findOrCreateCart`. Let's implement it. Create a file called `lib/cart.ts`, which will contain this function.
+
+As the eloquent function name suggests, it will return a cart if it exists, otherwise it will create it before returning it.
+
+Paste (or type) the following code inside `lib/cart.ts`:
+
+```ts
+import prisma from "./prisma";
+
+export async function findOrCreateCart(id: string) {
+  let cart = await prisma.cart.findUnique({
+    where: { id },
+  });
+  if (!cart) {
+    cart = await prisma.cart.create({
+      data: { id },
+    });
+  }
+  return cart;
+}
+```
+
+If you remember, this function looks exactly the same as the code we used previously on the `cart` resolver, so let's go ahead and edit `pages/api/index.ts` to use it in there as well.
+
+```ts
+import { findOrCreateCart } from "../../lib/cart";
+
+// ...
+
+const resolvers: Resolvers = {
+  Query: {
+    cart: async (_, { id }) => {
+      return findOrCreateCart(id);
+    },
+  },
+```
+
+To verify this new mutation works well, start the server if you haven't already. We'll fire up some GraphQL queries and mutations next.
+
+```bash
+npm run start
+```
+
+Go to `http://localhost:3000/api` and paste the following mutation on the explorer. It calls `addItem` with some test data.
+
+```graphql
+mutation {
+  addItem(
+    input: { cartId: "oneweekgraphql", id: "1", name: "Shirt", price: 1000 }
+  ) {
+    id
+    totalItems
+  }
+}
+```
+
+Now replace the mutation with a `cart` query that gets all items of the cart with the same id as before (`oneweekgraphql` in our case).
+
+```graphql
+{
+  cart(id: "oneweekgraphql") {
+    id
+    totalItems
+    items {
+      name
+      quantity
+      unitTotal {
+        formatted
+        amount
+      }
+      lineTotal {
+        formatted
+        amount
+      }
+    }
+    subTotal {
+      formatted
+    }
+  }
+}
+```
+
+You'll be surprised to find out it didn't quite work! The API returns an error with the message `Cannot return null for non-nullable field CartItem.unitTotal.`.
+
+This means we forgot to implement `CartItem.unitTotal` and `CartItem.lineTotal`. It's an error that did not surfaced before because we didn't have a way to add new items, but now we do.
+
+Let's fix it! We'll calculate the `amount` and `formatted` values in similar way to `Cart.subTotal`, using `currencyFormatter.format`.
+
+```ts
+  CartItem: {
+    unitTotal: (item) => {
+      const amount = item.price;
+      return {
+        amount,
+        formatted: currencyFormatter.format(amount / 100, {
+          code: currencyCode,
+        }),
+      };
+    },
+    lineTotal: (item) => {
+      const amount = item.quantity * item.price;
+
+      return {
+        amount,
+        formatted: currencyFormatter.format(amount / 100, {
+          code: currencyCode,
+        }),
+      };
+    },
+  },
+```
+
+Now you should be able to run the `cart` query in the explorer and receive a (suceessful!) response similar to this:
+
+```json
+{
+  "data": {
+    "cart": {
+      "id": "oneweekgraphql",
+      "totalItems": 1,
+      "items": [
+        {
+          "name": "Shirt",
+          "quantity": 1,
+          "unitTotal": {
+            "formatted": "$10.00",
+            "amount": 1000
+          },
+          "lineTotal": {
+            "formatted": "$10.00",
+            "amount": 1000
+          }
+        }
+      ],
+      "subTotal": {
+        "formatted": "$10.00"
+      }
+    }
+  }
+}
+```
