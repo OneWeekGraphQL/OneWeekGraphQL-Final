@@ -7,6 +7,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import prisma from "../../lib/prisma";
 import { Resolvers } from "../../types";
+import { findOrCreateCart } from "../../lib/cart";
 
 const currencyCode = "USD";
 
@@ -16,18 +17,30 @@ const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
 
 const resolvers: Resolvers = {
   Query: {
-    cart: async (_, { id }, { prisma }) => {
-      let cart = await prisma.cart.findUnique({
-        where: { id },
+    cart: async (_, { id }) => {
+      return findOrCreateCart(id);
+    },
+  },
+  Mutation: {
+    addItem: async (_, { input }) => {
+      await prisma.cartItem.upsert({
+        create: {
+          cartId: input.cartId,
+          id: input.id,
+          name: input.name,
+          description: input.description,
+          image: input.image,
+          price: input.price,
+          quantity: input.quantity || 1,
+        },
+        where: { id_cartId: { id: input.id, cartId: input.cartId } },
+        update: {
+          quantity: {
+            increment: input.quantity || 1,
+          },
+        },
       });
-
-      if (!cart) {
-        cart = await prisma.cart.create({
-          data: { id },
-        });
-      }
-
-      return cart;
+      return findOrCreateCart(input.cartId);
     },
   },
   Cart: {
@@ -56,6 +69,27 @@ const resolvers: Resolvers = {
         .items();
       const amount =
         items.reduce((acc, item) => acc + item.price * item.quantity, 0) ?? 0;
+      return {
+        amount,
+        formatted: currencyFormatter.format(amount / 100, {
+          code: currencyCode,
+        }),
+      };
+    },
+  },
+  CartItem: {
+    unitTotal: (item) => {
+      const amount = item.price;
+      return {
+        amount,
+        formatted: currencyFormatter.format(amount / 100, {
+          code: currencyCode,
+        }),
+      };
+    },
+    lineTotal: (item) => {
+      const amount = item.quantity * item.price;
+
       return {
         amount,
         formatted: currencyFormatter.format(amount / 100, {
