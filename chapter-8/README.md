@@ -165,6 +165,8 @@ This means we forgot to implement `CartItem.unitTotal` and `CartItem.lineTotal`.
 Let's fix it! We'll calculate the `amount` and `formatted` values in similar way to `Cart.subTotal`, using `currencyFormatter.format`.
 
 ```ts
+const resolvers: Resolvers = {
+  // ...
   CartItem: {
     unitTotal: (item) => {
       const amount = item.price;
@@ -186,6 +188,8 @@ Let's fix it! We'll calculate the `amount` and `formatted` values in similar way
       };
     },
   },
+  // ...
+};
 ```
 
 Now you should be able to run the `cart` query in the explorer and receive a (suceessful!) response similar to this:
