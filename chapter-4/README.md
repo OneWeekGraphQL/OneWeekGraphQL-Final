@@ -20,7 +20,7 @@ npx graphql-codegen init
 
 The wizard will ask us a bit more about our application:
 
-- **What type of application are you building?** — `React`
+- **What type of application are you building?** — `Backend - API or Server`
 
 - **Where is your schema?** — `schema.graphql`
 
@@ -49,31 +49,16 @@ generates:
     plugins:
       - "typescript"
       - "typescript-operations"
-```
-
-You’ll probably notice we’re missing the plugin `typescript-operations` that we said we’d be using above . Let’s install that now.
-
-At the command line, run the following:
-
-```bash
-npm install -E -D @graphql-codegen/typescript-resolvers
-```
-
-Once installed, update `codegen.yml` to include the new `plugin`:
-
-```yaml
-overwrite: true
-schema: "schema.graphql"
-documents: "**/*.graphql"
-generates:
-  types.ts:
-    plugins:
-      - "typescript"
-      - "typescript-operations"
       - "typescript-resolvers"
 ```
 
-We’ll now invoke the `codegen` script to generate our `types.ts` file, but before we do, you’ll want to comment out the line `documents: "**/*.graphql"` as we have no documents yet inside of our project:
+Before we continue, let's install the dependencies we configured.
+
+```bash
+npm install
+```
+
+Now invoke the `codegen` script to generate our `types.ts` file. But before we do, you’ll want to comment out the line `documents: "**/*.graphql"` as we have no documents yet inside of our project:
 
 ```yaml
 overwrite: true
