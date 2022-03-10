@@ -7,10 +7,9 @@ Now install and configure the [GraphQL Code Generator](https://www.graphql-code-
 The GraphQL Code Generator works by invoking plugins across our defined file(s). We’ll be using the following plugins:
 
 - `@graphql-codegen/typescript`
-- `@graphql-codegen/typescript-operations`
 - `@graphql-codegen/typescript-resolvers`
 
-Let’s use the initialization wizard to generate a config file.
+We'll need to add further plugins later when we build the frontend. Let’s use the initialization wizard to generate a config file.
 
 At the terminal, run the following:
 
@@ -24,9 +23,7 @@ The wizard will ask us a bit more about our application:
 
 - **Where is your schema?** — `schema.graphql`
 
-- **Where are your operations and fragments?** — `**/*.graphql`
-
-- **Pick plugins** — `TypeScript, TypeScript Operations`
+- **Pick plugins** — `TypeScript, TypeScript Resolvers`
 
 - **Where to write the output** — `types.ts`
 
@@ -42,13 +39,12 @@ If you open `codegen.yml` it should look something like:
 
 ```yaml
 overwrite: true
-schema: "schema.graphql"
-documents: "**/*.graphql"
+schema: schema.graphql
+documents: null
 generates:
   types.ts:
     plugins:
       - "typescript"
-      - "typescript-operations"
       - "typescript-resolvers"
 ```
 
@@ -58,19 +54,7 @@ Before we continue, let's install the dependencies we configured.
 npm install
 ```
 
-Now invoke the `codegen` script to generate our `types.ts` file. But before we do, you’ll want to comment out the line `documents: "**/*.graphql"` as we have no documents yet inside of our project:
-
-```yaml
-overwrite: true
-schema: "schema.graphql"
-# documents: "**/*.graphql"
-generates:
-  types.ts:
-    plugins:
-      - "typescript"
-      - "typescript-operations"
-      - "typescript-resolvers"
-```
+Now invoke the `codegen` script to generate our `types.ts` file.
 
 At the command line, run the following:
 
@@ -111,11 +95,15 @@ export type Query = {
   cart?: Maybe<Cart>;
 };
 
+
 export type QueryCartArgs = {
   id: Scalars['ID'];
 };
 
+
+
 export type ResolverTypeWrapper<T> = Promise<T> | T;
+
 
 export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
   resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
