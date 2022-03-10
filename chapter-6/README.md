@@ -110,14 +110,13 @@ Inside of `codegen.yml` add a block for `config` under `types.ts` to the exporte
 ```yaml
 overwrite: true
 schema: "schema.graphql"
-# documents: "**/*.graphql"
+documents: null
 generates:
   types.ts:
     config:
       contextType: ./pages/api/index#GraphQLContext
     plugins:
       - "typescript"
-      - "typescript-operations"
       - "typescript-resolvers"
 ```
 
