@@ -100,10 +100,6 @@ const resolvers: Resolvers = {
   },
 };
 
-// export type GraphQLContext = {
-//   prisma: PrismaClient;
-// };
-
 export interface GraphQLContext extends YogaInitialContext {
   prisma: PrismaClient;
 }
