@@ -17,15 +17,16 @@ const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
 
 const resolvers: Resolvers = {
   Query: {
-    cart: async (_, { id }) => {
-      return findOrCreateCart(id);
+    cart: async (_, { id }, { prisma }) => {
+      return findOrCreateCart(prisma, id);
     },
   },
   Mutation: {
-    addItem: async (_, { input }) => {
+    addItem: async (_, { input }, { prisma }) => {
+      const cart = await findOrCreateCart(prisma, input.cartId);
       await prisma.cartItem.upsert({
         create: {
-          cartId: input.cartId,
+          cartId: cart.id,
           id: input.id,
           name: input.name,
           description: input.description,
@@ -33,25 +34,25 @@ const resolvers: Resolvers = {
           price: input.price,
           quantity: input.quantity || 1,
         },
-        where: { id_cartId: { id: input.id, cartId: input.cartId } },
+        where: { id_cartId: { id: input.id, cartId: cart.id } },
         update: {
           quantity: {
             increment: input.quantity || 1,
           },
         },
       });
-      return findOrCreateCart(input.cartId);
+      return cart;
     },
-    removeItem: async (_, { input }) => {
+    removeItem: async (_, { input }, { prisma }) => {
       const { cartId } = await prisma.cartItem.delete({
         where: { id_cartId: { id: input.id, cartId: input.cartId } },
         select: {
           cartId: true,
         },
       });
-      return findOrCreateCart(cartId);
+      return findOrCreateCart(prisma, cartId);
     },
-    increaseCartItem: async (_, { input }) => {
+    increaseCartItem: async (_, { input }, { prisma }) => {
       const { cartId, quantity } = await prisma.cartItem.update({
         data: {
           quantity: {
@@ -64,7 +65,7 @@ const resolvers: Resolvers = {
           cartId: true,
         },
       });
-      return findOrCreateCart(cartId);
+      return findOrCreateCart(prisma, cartId);
     },
   },
   Cart: {

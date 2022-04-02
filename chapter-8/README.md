@@ -53,10 +53,11 @@ Add the following code right after `Query`, inside of `pages/api/index.ts`:
 
 ```ts
   Mutation: {
-    addItem: async (_, { input }) => {
+    addItem: async (_, { input }, { prisma }) => {
+      const cart = await findOrCreateCart(prisma, input.cartId);
       await prisma.cartItem.upsert({
         create: {
-          cartId: input.cartId,
+          cartId: cart.id,
           id: input.id,
           name: input.name,
           description: input.description,
@@ -64,14 +65,14 @@ Add the following code right after `Query`, inside of `pages/api/index.ts`:
           price: input.price,
           quantity: input.quantity || 1,
         },
-        where: { id_cartId: { id: input.id, cartId: input.cartId } },
+        where: { id_cartId: { id: input.id, cartId: cart.id } },
         update: {
           quantity: {
             increment: input.quantity || 1,
           },
         },
       });
-      return findOrCreateCart(input.cartId);
+      return cart;
     },
   },
 ```
@@ -83,9 +84,9 @@ As the eloquent function name suggests, it will return a cart if it exists, othe
 Paste (or type) the following code inside `lib/cart.ts`:
 
 ```ts
-import prisma from "./prisma";
+import { PrismaClient } from "@prisma/client";
 
-export async function findOrCreateCart(id: string) {
+export async function findOrCreateCart(prisma: PrismaClient, id: string) {
   let cart = await prisma.cart.findUnique({
     where: { id },
   });
@@ -107,8 +108,8 @@ import { findOrCreateCart } from "../../lib/cart";
 
 const resolvers: Resolvers = {
   Query: {
-    cart: async (_, { id }) => {
-      return findOrCreateCart(id);
+    cart: async (_, { id }, { prisma }) => {
+      return findOrCreateCart(prisma, id);
     },
   },
 ```
