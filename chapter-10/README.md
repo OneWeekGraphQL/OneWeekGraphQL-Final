@@ -43,7 +43,7 @@ const resolvers: Resolvers = {
   // ...
   Mutation: {
     // ...
-    increaseCartItem: async (_, { input }) => {
+    increaseCartItem: async (_, { input }, { prisma }) => {
       const { cartId, quantity } = await prisma.cartItem.update({
         data: {
           quantity: {
@@ -56,7 +56,7 @@ const resolvers: Resolvers = {
           cartId: true,
         },
       });
-      return findOrCreateCart(cartId);
+      return findOrCreateCart(prisma, cartId);
     },
   },
 };
