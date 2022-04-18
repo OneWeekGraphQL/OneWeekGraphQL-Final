@@ -3,7 +3,6 @@ import { join } from "path";
 import { readFileSync } from "fs";
 import { Resolvers } from "../../types";
 import type { PrismaClient } from "@prisma/client";
-import type { YogaInitialContext } from "@graphql-yoga/node";
 
 import prisma from "../../lib/prisma";
 
@@ -11,8 +10,14 @@ import currencyFormatter from "currency-formatter";
 
 const currencyCode = "USD";
 
-export interface GraphQLContext extends YogaInitialContext {
+export type GraphQLContext = {
   prisma: PrismaClient;
+};
+
+export async function createContext(): Promise<GraphQLContext> {
+  return {
+    prisma,
+  };
 }
 
 const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
@@ -74,11 +79,6 @@ const resolvers: Resolvers = {
   },
 };
 
-const context: (req: YogaInitialContext) => GraphQLContext = (req) => ({
-  ...req,
-  prisma,
-});
-
 const server = createServer({
   cors: false,
   endpoint: "/api",
@@ -89,7 +89,7 @@ const server = createServer({
     typeDefs,
     resolvers,
   },
-  context,
+  context: createContext(),
 });
 
 export const config = {

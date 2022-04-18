@@ -33,7 +33,7 @@ Before we continue, let’s update `package.json` to include a script to run the
   "start": "next start",
   "lint": "next lint",
   "codegen": "graphql-codegen --config codegen.yml",
-  "generate": "prisma generate"
+  "db:generate": "prisma generate"
 }
 ```
 
@@ -86,11 +86,10 @@ if (process.env.NODE_ENV === "production") {
 export default prisma;
 ```
 
-Now we’ll hook up Prisma with our GraphQL server context. Inside `pages/api/index.ts` go ahead and import the Prisma client we exported from `lib/prisma.ts` and the type `PrismaClient` from the `@prisma/client` dependency, as well as `YogaInitialContext` type:
+Now we’ll hook up Prisma with our GraphQL server context. Inside `pages/api/index.ts` go ahead and import the Prisma client we exported from `lib/prisma.ts` and the type `PrismaClient` from the `@prisma/client`:
 
 ```tsx
 import type { PrismaClient } from "@prisma/client";
-import type { YogaInitialContext } from "@graphql-yoga/node";
 
 import prisma from "../../lib/prisma";
 ```
@@ -98,9 +97,9 @@ import prisma from "../../lib/prisma";
 Then define a new `type` for `GraphQLContext`:
 
 ```tsx
-export interface GraphQLContext extends YogaInitialContext {
-	prisma: PrismaClient
-}
+export type GraphQLContext = {
+  prisma: PrismaClient;
+};
 ```
 
 We should now update `codegen.yml` to point the `contextType` to our newly defined `GraphQLContext` type.
@@ -131,7 +130,7 @@ npm run codegen
 You’ll now see inside of `types.ts` that the type for `Resolvers` has been updated to include the `GraphQLContext`:
 
 ```tsx
-import { GraphQLContext } from './pages/api/index';
+import { GraphQLContext } from "./pages/api/index";
 
 // ...
 
@@ -143,35 +142,14 @@ export type Resolvers<ContextType = GraphQLContext> = {
 
 Now inside of our resolvers we have fully typed `context`.
 
-Before we continue, let’s create a new `context` object, and pass it along to `createServer`:
+Before we continue, let’s create a function `createServer` object, and pass it along to `createServer`:
 
 ```tsx
-const context: GraphQLContext = {
-  prisma,
-};
-
-const server = createServer({
-  cors: false,
-  endpoint: "/api",
-  logging: {
-    prettyLog: false,
-  },
-  schema: {
-    typeDefs,
-    resolvers,
-  },
-  context: (req) => ({
-    ...req,
+export async function createContext(): Promise<GraphQLContext> {
+  return {
     prisma,
-  }),
-});
-```
-
-```tsx
-const context: (req: YogaInitialContext) => GraphQLContext = (req) => ({
-  ...req,
-  prisma,
-});
+  };
+}
 
 const server = createServer({
   cors: false,
@@ -183,8 +161,8 @@ const server = createServer({
     typeDefs,
     resolvers,
   },
-  context,
+  context: createContext(),
 });
 ```
 
-At this point we’ve not created any models inside `prisma/schema.prisma` so running the script `generate` will not do anything. We’ll fix this next.
+At this point we’ve not created any models inside `prisma/schema.prisma` so running the script `db:generate` will not do anything. We’ll fix this next.

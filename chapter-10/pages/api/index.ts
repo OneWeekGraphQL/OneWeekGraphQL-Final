@@ -1,5 +1,4 @@
 import { createServer } from "@graphql-yoga/node";
-import type { YogaInitialContext } from "@graphql-yoga/node";
 import { join } from "path";
 import { readFileSync } from "fs";
 import currencyFormatter from "currency-formatter";
@@ -8,6 +7,16 @@ import type { PrismaClient } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { Resolvers } from "../../types";
 import { findOrCreateCart } from "../../lib/cart";
+
+export type GraphQLContext = {
+  prisma: PrismaClient;
+};
+
+export async function createContext(): Promise<GraphQLContext> {
+  return {
+    prisma,
+  };
+}
 
 const currencyCode = "USD";
 
@@ -125,11 +134,7 @@ const resolvers: Resolvers = {
   },
 };
 
-export interface GraphQLContext extends YogaInitialContext {
-  prisma: PrismaClient;
-}
-
-const server = createServer<GraphQLContext, null>({
+const server = createServer({
   cors: false,
   endpoint: "/api",
   logging: {
@@ -139,10 +144,7 @@ const server = createServer<GraphQLContext, null>({
     typeDefs,
     resolvers,
   },
-  context: ({ request }) => ({
-    request,
-    prisma,
-  }),
+  context: createContext(),
 });
 
 export const config = {
