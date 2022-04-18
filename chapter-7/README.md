@@ -145,7 +145,7 @@ The file should now look something like:
 ```yaml
 overwrite: true
 schema: "schema.graphql"
-# documents: "**/*.graphql"
+documents: null
 generates:
   types.ts:
     config:
