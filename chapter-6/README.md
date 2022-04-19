@@ -152,11 +152,7 @@ export async function createContext(): Promise<GraphQLContext> {
 }
 
 const server = createServer({
-  cors: false,
   endpoint: "/api",
-  logging: {
-    prettyLog: false,
-  },
   schema: {
     typeDefs,
     resolvers,
