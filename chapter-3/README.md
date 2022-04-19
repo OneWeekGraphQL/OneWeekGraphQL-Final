@@ -19,22 +19,11 @@ Now inside of `pages/api` you’ll want to rename `hello.ts` to `index.ts`. You 
 Replace the contents of `pages/api/index.ts` with the following:
 
 ```tsx
-import { createServer } from '@graphql-yoga/node'
+import { createServer } from "@graphql-yoga/node";
 
 const server = createServer({
-  cors: false,
-  endpoint: '/api',
-  logging: {
-    prettyLog: false,
-  },
-})
-
-export const config = {
-  api: {
-    bodyParser: false,
-    externalResolver: true,
-  },
-}
+  endpoint: "/api",
+});
 
 export default server.requestListener;
 ```
@@ -85,7 +74,7 @@ const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
 
 ⚠️ We need to use `process.cwd()` instead of `__dirname` due to how Vercel works — [learn more](https://nextjs.org/docs/api-reference/data-fetching/get-static-props#reading-files-use-processcwd).
 
-Now we’ll define a resolver for our `cart` query.  Below `typeDefs`, create a new const `resolvers`:
+Now we’ll define a resolver for our `cart` query. Below `typeDefs`, create a new const `resolvers`:
 
 ```tsx
 const resolvers = {
@@ -93,26 +82,22 @@ const resolvers = {
     cart: (_, { id }) => {
       return {
         id,
-        totalItems: 0
-      }
-    }
-  }
-}
+        totalItems: 0,
+      };
+    },
+  },
+};
 ```
 
 We’ll destructure `id` from the 2nd argument for the `cart` resolver, and then return an object that matches the type defined in our `schema.graphql`.
 
-👀 *You’ll notice we have no type safety on the above resolvers. TypeScript is warning us about the implicit `any` type. We’ll fix that with the GraphQL Code Generator next.*
+👀 _You’ll notice we have no type safety on the above resolvers. TypeScript is warning us about the implicit `any` type. We’ll fix that with the GraphQL Code Generator next._
 
 You can now pass `typeDefs`, and `resolvers` to `schema` inside of `createServer`:
 
 ```tsx
 const server = createServer({
-  cors: false,
   endpoint: "/api",
-  logging: {
-    prettyLog: false,
-  },
   schema: {
     typeDefs,
     resolvers,

@@ -3,6 +3,7 @@ import { join } from "path";
 import { readFileSync } from "fs";
 import { Resolvers } from "../../types";
 import type { PrismaClient } from "@prisma/client";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 import prisma from "../../lib/prisma";
 
@@ -31,24 +32,16 @@ const resolvers: Resolvers = {
   },
 };
 
-const server = createServer({
-  cors: false,
+const server = createServer<{
+  req: NextApiRequest;
+  res: NextApiResponse;
+}>({
   endpoint: "/api",
-  logging: {
-    prettyLog: false,
-  },
   schema: {
     typeDefs,
     resolvers,
   },
   context: createContext(),
 });
-
-export const config = {
-  api: {
-    bodyParser: false,
-    externalResolver: true,
-  },
-};
 
 export default server.requestListener;

@@ -18,22 +18,11 @@ const resolvers = {
 };
 
 const server = createServer({
-  cors: false,
   endpoint: "/api",
-  logging: {
-    prettyLog: false,
-  },
   schema: {
     typeDefs,
     resolvers,
   },
 });
-
-export const config = {
-  api: {
-    bodyParser: false,
-    externalResolver: true,
-  },
-};
 
 export default server.requestListener;
