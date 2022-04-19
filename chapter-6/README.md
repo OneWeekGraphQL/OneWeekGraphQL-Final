@@ -142,7 +142,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
 
 Now inside of our resolvers we have fully typed `context`.
 
-Before we continue, let’s create a function `createServer` object, and pass it along to `createServer`:
+Before we continue, let’s create a function `createServer`, and pass it along to `createServer`:
 
 ```tsx
 export async function createContext(): Promise<GraphQLContext> {
