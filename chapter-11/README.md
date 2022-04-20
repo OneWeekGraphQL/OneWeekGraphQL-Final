@@ -75,7 +75,7 @@ const resolvers: Resolvers = {
 
 ## Sending mutation from our client
 
-We can now decrease cart item's by going to [http://localhost:3000/api](http://localhost:3000/api) and fire up the mutation from GraphiQL. Feel free to press Cmd + Enter many times, like a madperson, just to verify the quantity never goes below zero, which would be too abstract anyway.
+We can now decrease cart item's by going to [http://localhost:3000/api](http://localhost:3000/api) and fire up the mutation from GraphiQL. Feel free to press <kbd>CMD</kbd> + <kbd>Enter</kbd> many times, like a madperson, just to verify the quantity never goes below zero, which would be too abstract anyway.
 
 ```graphql
 mutation decreaseCartItem {
