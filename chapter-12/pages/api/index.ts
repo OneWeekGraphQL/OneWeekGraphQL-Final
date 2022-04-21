@@ -130,11 +130,11 @@ const resolvers: Resolvers = {
         return {
           quantity: item.quantity,
           price_data: {
-            currency: "USD",
+            currency: currencyCode,
             unit_amount: item.price,
             product_data: {
               name: item.name,
-              description: item.description || "Description",
+              description: item.description || undefined,
               images: item.image ? [item.image] : [],
             },
           },

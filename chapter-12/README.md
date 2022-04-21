@@ -71,6 +71,8 @@ After all this data fetching and transforming, we finally have all the data we n
 
 We'll pass `success_url` and `cancel_url` so that the hosted checkout page knows where to redirect users. Success URL will be `${origin}/thankyou?session_id={CHECKOUT_SESSION_ID}` and cancel URL `${origin}/cart?cancelled=true`.
 
+Notice how the thank you URL has a `session_id` variable set to `CHECKOUT_SESSION_ID`. This is a special template variable that stripe replaces with a session id after the customer pays and is redirected. Leave the value as is. More info at Stripe's [custom success page docs](https://stripe.com/docs/payments/checkout/custom-success-page).
+
 Both URLs start with a variable called `origin`, which changes depending on the environment and also whether it's running on the server or on the client. It is `http://localhost:3000` on development, `NEXT_PUBLIC_VERCEL_URL` on non local environments and `window.location.host` on the client.
 
 To define the `origin` variable, create a file called `client.ts` on the `lib` folder with the following code:
@@ -127,11 +129,11 @@ const resolvers: Resolvers = {
         return {
           quantity: item.quantity,
           price_data: {
-            currency: "USD",
+            currency: currencyCode,
             unit_amount: item.price,
             product_data: {
               name: item.name,
-              description: item.description || "Description",
+              description: item.description || undefined,
               images: item.image ? [item.image] : [],
             },
           },
@@ -158,7 +160,7 @@ const resolvers: Resolvers = {
 };
 ```
 
-Try it out by going to [http://localhost:3000/api] and send the newly created mutation:
+Try it out by going to [http://localhost:3000/api](http://localhost:3000/api) and send the newly created mutation:
 
 ```graphql
 mutation {
