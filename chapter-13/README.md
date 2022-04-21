@@ -44,12 +44,18 @@ An item is valid if:
 - `Id` matches a product in our inventory
 - `Price` hasn't been tampered with. This is why we use the price from our inventory
 
-We'll add a new function called `validateCartItems` to `lib/cart.ts`. It does the same mapping from cart items to line items we did in the `createCheckoutSession` resolver, and it also validates `id` and `price`:
+We'll add a new function called `validateCartItems` to `lib/cart.ts`. It does the same mapping from cart items to line items we did in the `createCheckoutSession` resolver, and it also validates `id` and `price`.
+
+Another thing we'll do in this file is export and define `currencyCode`, since now it's used both here and in `pages/api/index.ts`. Be sure to import it on the resolvers file and delete the previous declaration.
+
+This is what `lib/cart.ts` should look like now:
 
 ```ts
 import { PrismaClient, CartItem } from "@prisma/client";
 import { Stripe } from "stripe";
 import { Product } from "./products";
+
+export const currencyCode = "USD";
 
 // ...
 
@@ -86,7 +92,11 @@ Now replace the `line_item` assignment inside the `createCheckoutSession` mutati
 
 ```ts
 // ...
-import { findOrCreateCart, validateCartItems } from "../../lib/cart";
+import {
+  findOrCreateCart,
+  validateCartItems,
+  currencyCode,
+} from "../../lib/cart";
 import { stripe } from "../../lib/stripe";
 import { origin } from "../../lib/client";
 import { products } from "../../lib/products";
