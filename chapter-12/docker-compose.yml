@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  database:
+    platform: linux/x86_64
+    image: mysql
+    restart: always
+    environment:
+      - MYSQL_DATABASE=mydb
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+    ports:
+      - "3307:3306"
