@@ -1,0 +1,6 @@
+mutation CreateCheckoutSession($input: CreateCheckoutSessionInput!) {
+  createCheckoutSession(input: $input) {
+    id
+    url
+  }
+}

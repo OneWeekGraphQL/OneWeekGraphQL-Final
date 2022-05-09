@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cart {
+  id    String     @id @default(uuid())
+  items CartItem[]
+}
+
+model CartItem {
+  id          String  @default(uuid())
+  name        String
+  description String?
+  price       Float
+  quantity    Int
+  image       String?
+  cartId      String
+  cart        Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@id([id, cartId])
+}

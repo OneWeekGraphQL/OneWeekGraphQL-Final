@@ -1,0 +1,7 @@
+# import Cart from "./CartFragment"
+
+mutation increaseCartItem($input: IncreaseCartItemInput!) {
+  increaseCartItem(input: $input) {
+    ...Cart
+  }
+}

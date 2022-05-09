@@ -1,0 +1,7 @@
+# import Cart from "./CartFragment"
+
+query GetCart($id: ID!) {
+  cart(id: $id) {
+    ...Cart
+  }
+}

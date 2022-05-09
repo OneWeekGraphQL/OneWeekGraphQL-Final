@@ -1,0 +1,7 @@
+# import Cart from "./CartFragment"
+
+mutation addToCart($input: AddToCartInput!) {
+  addItem(input: $input) {
+    ...Cart
+  }
+}
