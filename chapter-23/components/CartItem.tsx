@@ -17,7 +17,7 @@ export function CartItem({
 }: {
   item: CartItem;
   cartId: string;
-  isReadOnly: boolean;
+  isReadOnly?: boolean;
 }) {
   const [increaseCartItem, { loading: increasingCartItem }] =
     useIncreaseCartItemMutation({

@@ -146,7 +146,7 @@ export function CartItem({
 }: {
   item: CartItem;
   cartId: string;
-  isReadOnly: boolean;
+  isReadOnly?: boolean;
 }) {
   // ...
   return (
