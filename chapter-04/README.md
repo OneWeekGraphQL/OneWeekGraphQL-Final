@@ -14,7 +14,7 @@ We'll need to add further plugins later when we build the frontend. Let’s use 
 At the terminal, run the following:
 
 ```bash
-npx graphql-codegen init
+npx graphql-code-generator init
 ```
 
 The wizard will ask us a bit more about our application:
